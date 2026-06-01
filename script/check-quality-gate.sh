@@ -9,7 +9,12 @@ fi
 
 metadataFile="$1"
 pollingTimeoutSec="$2"
+customHeader="$3"
 
+curlHeaderArgs=()
+if [[ -n "${customHeader}" ]]; then
+  curlHeaderArgs=(--header "${customHeader}")
+fi
 
 if [[ ! -f "$metadataFile" ]]; then
    echo "$metadataFile does not exist."
@@ -41,7 +46,7 @@ if [[ -n "${SONAR_ROOT_CERT}" ]]; then
   echo "--cacert /tmp/tmpcert.pem" >> ~/.curlrc
 fi
 
-task="$(curl --location --location-trusted --max-redirs 10  --silent --fail --show-error --user "${SONAR_TOKEN}": "${ceTaskUrl}")"
+task="$(curl --location --location-trusted --max-redirs 10  --silent --fail --show-error --user "${SONAR_TOKEN}": "${curlHeaderArgs[@]}" "${ceTaskUrl}")"
 status="$(jq -r '.task.status' <<< "$task")"
 
 endTime=$(( ${SECONDS} + ${pollingTimeoutSec} ))
@@ -49,7 +54,7 @@ endTime=$(( ${SECONDS} + ${pollingTimeoutSec} ))
 until [[ ${status} != "PENDING" && ${status} != "IN_PROGRESS" || ${SECONDS} -ge ${endTime} ]]; do
     printf '.'
     sleep 5
-    task="$(curl --location --location-trusted --max-redirs 10 --silent --fail --show-error --user "${SONAR_TOKEN}": "${ceTaskUrl}")"
+    task="$(curl --location --location-trusted --max-redirs 10 --silent --fail --show-error --user "${SONAR_TOKEN}": "${curlHeaderArgs[@]}" "${ceTaskUrl}")"
     status="$(jq -r '.task.status' <<< "$task")"
 done
 printf '\n'
@@ -61,7 +66,7 @@ fi
 
 analysisId="$(jq -r '.task.analysisId' <<< "${task}")"
 qualityGateUrl="${serverUrl}/api/qualitygates/project_status?analysisId=${analysisId}"
-qualityGateStatus="$(curl --location --location-trusted --max-redirs 10 --silent --fail --show-error --user "${SONAR_TOKEN}": "${qualityGateUrl}" | jq -r '.projectStatus.status')"
+qualityGateStatus="$(curl --location --location-trusted --max-redirs 10 --silent --fail --show-error --user "${SONAR_TOKEN}": "${curlHeaderArgs[@]}" "${qualityGateUrl}" | jq -r '.projectStatus.status')"
 
 dashboardUrl="$(sed -n 's/dashboardUrl=\(.*\)/\1/p' "${metadataFile}")"
 analysisResultMsg="Detailed information can be found at: ${dashboardUrl}\n"
