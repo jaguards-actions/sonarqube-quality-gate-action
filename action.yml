@@ -9,7 +9,7 @@ runs:
   using: "composite"
   steps:
     - id: quality-gate-check
-      run: $GITHUB_ACTION_PATH/script/check-quality-gate.sh "${{ inputs.scanMetadataReportFile  }}" "${{ inputs.pollingTimeoutSec }}"
+      run: $GITHUB_ACTION_PATH/script/check-quality-gate.sh "${{ inputs.scanMetadataReportFile  }}" "${{ inputs.pollingTimeoutSec }}" "${{ inputs.customHeader }}"
       shell: bash
 inputs:
   scanMetadataReportFile:
@@ -20,6 +20,10 @@ inputs:
     description: "The maximum time (in seconds) to poll for SonarQube's Quality Gate status. Default: 300."
     required: false
     default: "300"
+  customHeader:
+    description: "An optional custom HTTP header to include in requests to SonarQube (format: 'HeaderName: HeaderValue')."
+    required: false
+    default: ""
 outputs:
   quality-gate-status:
     description: >

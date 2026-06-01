@@ -274,6 +274,32 @@ teardown() {
   [[ "$output" = *"Quality Gate has PASSED."* ]]
 }
 
+@test "pass when Quality Gate status OK with custom header" {
+  export SONAR_TOKEN="test"
+  echo "serverUrl=http://localhost:9000" >> metadata_tmp
+  echo "ceTaskUrl=http://localhost:9000/api/ce/task?id=AXlCe3gsFwOUsY8YKHTn" >> metadata_tmp
+
+  #mock curl
+  function curl() {
+    url="${@: -1}"
+     if [[ $url == *"/api/qualitygates/project_status?analysisId"* ]]; then
+       echo '{"projectStatus":{"status":"OK"}}'
+     else
+       echo '{"task":{"analysisId":"AXlCe3jz9LkwR9Gs0pBY","status":"SUCCESS"}}'
+     fi
+  }
+  export -f curl
+
+  run script/check-quality-gate.sh metadata_tmp 300 "X-Custom-Auth: secret"
+
+  read -r github_out_actual < ${GITHUB_OUTPUT}
+
+  [ "$status" -eq 0 ]
+  [[ "${github_out_actual}" = "quality-gate-status=PASSED" ]]
+  [[ "$output" = *"Quality Gate has PASSED."* ]]
+}
+
+
 @test "pass fall back to set-output if GITHUB_OUTPUT unset" {
   export SONAR_TOKEN="test"
   unset GITHUB_OUTPUT
